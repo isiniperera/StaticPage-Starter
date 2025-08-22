@@ -9,7 +9,10 @@ on:
 # Define what operating system the job should run on
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [untu-latest, windows-latest, macos-latest]
     permissions:
       contents: write
 
