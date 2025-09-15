@@ -29,10 +29,12 @@ jobs:
       # Step 3: Install dependencies
       - name: Install dependencies
         run: npm install
+        working-directory: ./
 
       # Step 4: Run build
       - name: Build project
         run: npm run build
+        working-directory: ./
 
       # Step 5: Upload build artifacts (optional but useful)
       - name: Upload production build
