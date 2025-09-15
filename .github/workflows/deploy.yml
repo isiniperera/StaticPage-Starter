@@ -1,7 +1,7 @@
 name: Deploy Static HTML and CSS to GitHub Pages
 
 # Trigger the workflow on push to the main branch
-
+# Triggering test
 on:
   push:
     branches:
