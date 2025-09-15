@@ -1,44 +1,61 @@
-name: Build Frontend
+name: Deploy Project (Static or Node)
 
 on:
   push:
     branches:
-      - main  
-  pull_request:
-    branches:
-      - main   # also build when a PR targets main
+      - main
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      # Step 1: Checkout repo
+      # Step 1: Checkout code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step 2: Setup Node.js (adjust version if needed)
+      # Step 2: Detect if package.json exists
+      - name: Check for package.json
+        id: detect
+        run: |
+          if [ -f "package.json" ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Step 3: Setup Node.js only if package.json exists
       - name: Setup Node.js
+        if: steps.detect.outputs.found == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      # Step 3: Install dependencies
+      # Step 4: Install dependencies (only if package.json exists)
       - name: Install dependencies
+        if: steps.detect.outputs.found == 'true'
         run: npm install
-        working-directory: ./
 
-      # Step 4: Run build
+      # Step 5: Build project (only if package.json exists)
       - name: Build project
+        if: steps.detect.outputs.found == 'true'
         run: npm run build
-        working-directory: ./
 
-      # Step 5: Upload build artifacts (optional but useful)
-      - name: Upload production build
-        uses: actions/upload-artifact@v4
+      # Step 6: Set publish_dir (build/ for Node projects, ./ for static sites)
+      - name: Set publish directory
+        id: setdir
+        run: |
+          if [ -d "build" ]; then
+            echo "dir=build" >> $GITHUB_OUTPUT
+          else
+            echo "dir=." >> $GITHUB_OUTPUT
+          fi
+
+      # Step 7: Deploy to GitHub Pages
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          name: frontend-build
-          path: dist   
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ steps.setdir.outputs.dir }}
