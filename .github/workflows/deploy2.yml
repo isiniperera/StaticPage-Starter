@@ -1,61 +1,43 @@
-name: Deploy Project (Static or Node)
+name: Build Frontend
 
 on:
   push:
     branches:
-      - main
+      - UI-enhancements   # run only on your branch
+  pull_request:
+    branches:
+      - UI-enhancements
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+  build:
+    runs-on: ubuntu-latest   # simpler to use one OS for now
 
     steps:
-      # Step 1: Checkout code
+      # Step 1: Checkout repo
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step 2: Detect if package.json exists
-      - name: Check for package.json
-        id: detect
-        run: |
-          if [ -f "package.json" ]; then
-            echo "found=true" >> $GITHUB_OUTPUT
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
-          fi
-
-      # Step 3: Setup Node.js only if package.json exists
+      # Step 2: Setup Node.js
       - name: Setup Node.js
-        if: steps.detect.outputs.found == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
-      # Step 4: Install dependencies (only if package.json exists)
+      # Step 3: Install dependencies
       - name: Install dependencies
-        if: steps.detect.outputs.found == 'true'
         run: npm install
 
-      # Step 5: Build project (only if package.json exists)
+      # Step 4: Run tests (optional)
+      - name: Run tests
+        run: npm test -- --watchAll=false
+
+      # Step 5: Build project
       - name: Build project
-        if: steps.detect.outputs.found == 'true'
         run: npm run build
 
-      # Step 6: Set publish_dir (build/ for Node projects, ./ for static sites)
-      - name: Set publish directory
-        id: setdir
-        run: |
-          if [ -d "build" ]; then
-            echo "dir=build" >> $GITHUB_OUTPUT
-          else
-            echo "dir=." >> $GITHUB_OUTPUT
-          fi
-
-      # Step 7: Deploy to GitHub Pages
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4
+      # Step 6: Upload build artifacts
+      - name: Upload production build
+        uses: actions/upload-artifact@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ${{ steps.setdir.outputs.dir }}
+          name: frontend-build
+          path: build
